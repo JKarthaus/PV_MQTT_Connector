@@ -39,14 +39,14 @@ public class TwitterTest {
 		
 		ConfigurationBuilder cb = new ConfigurationBuilder();
 		cb.setDebugEnabled(true)
-		  .setOAuthConsumerKey("lBOe0CP5R8zmHLG1zR3r94VlI")
-		  .setOAuthConsumerSecret("mKI99RyNViKol7vMjPaLbXenXV866ww8fICF4YMMKQf3B0DJkI")
-		  .setOAuthAccessToken("3420830823-4RuVNW85kQ6yWxVG3qtSmGmNNC3KhHoKdI8EhYz")
-		  .setOAuthAccessTokenSecret("OPHmSy5d6pVPA4VKvstgANTRSIFJYNZm4v6aoCL4tbKih");
+		  .setOAuthConsumerKey("Consumer Key")
+		  .setOAuthConsumerSecret("Consumer Secret")
+		  .setOAuthAccessToken("Access Token")
+		  .setOAuthAccessTokenSecret("Token Sekret");
 		TwitterFactory tf = new TwitterFactory(cb.build());
 		// The factory instance is re-useable and thread safe.
 	    Twitter sender = tf.getInstance();
-	    DirectMessage message = sender.sendDirectMessage("@JoernKarthaus", "Fehler in Heizungssystem -bitte hilf mir");
+	    DirectMessage message = sender.sendDirectMessage("@BillGates", "Fehler in Heizungssystem -bitte hilf mir");
 	    System.out.println("Sent: " + message.getText() + " to @" + message.getRecipientScreenName());
 	}
 
