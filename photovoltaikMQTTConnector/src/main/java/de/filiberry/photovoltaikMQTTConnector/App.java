@@ -1,0 +1,136 @@
+package de.filiberry.photovoltaikMQTTConnector;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Properties;
+
+import javax.xml.bind.JAXBException;
+
+import org.apache.commons.daemon.Daemon;
+import org.apache.commons.daemon.DaemonContext;
+import org.apache.log4j.Logger;
+
+import twitter4j.TwitterException;
+import de.filiberry.photovoltaikMQTTConnector.model.PhotovoltaikModel;
+import de.filiberry.photovoltaikMQTTConnector.tools.DBPersistor;
+import de.filiberry.photovoltaikMQTTConnector.tools.LastRunParser;
+import de.filiberry.photovoltaikMQTTConnector.tools.MQTT_Push;
+import de.filiberry.photovoltaikMQTTConnector.tools.SolarLoggerParser;
+import de.filiberry.photovoltaikMQTTConnector.tools.SunriseBuddy;
+import de.filiberry.photovoltaikMQTTConnector.tools.TwitterBuddy;
+
+public class App implements Daemon{
+
+	public static Logger log = Logger.getLogger(App.class);
+	private TwitterBuddy twitterBuddy;
+	private String[] startPara;
+
+	/**
+	 * 
+	 * @param config
+	 * @throws IOException
+	 * @throws ParseException
+	 */
+	private void run(Properties config) throws IOException, ParseException, JAXBException {
+		SunriseBuddy sunriseBuddy = new SunriseBuddy(config);
+
+		SolarLoggerParser solarLoggerParser = new SolarLoggerParser();
+		DBPersistor dbPersistor = new DBPersistor();
+		MQTT_Push mqtt_Push = new MQTT_Push(config);
+		Date lastRun = LastRunParser.getLastRun();
+		while (true) {
+			// --
+			if (sunriseBuddy.isSunrise()) {
+				InputStream input = new URL(config.getProperty("PHOTOVOLTAIK_DATA_PROVIDER")).openStream();
+				ArrayList<PhotovoltaikModel> pmAL = solarLoggerParser.parseSolarDataSince(input, lastRun);
+				if (pmAL.size() > 0) {
+					mqtt_Push.PushNewData(pmAL);
+					dbPersistor.PersistNewData(pmAL);
+				} else {
+					log.info("Nothing to Store or Push");
+				}
+				LastRunParser.setLastRun(new Date());
+			}
+			// --
+			try {
+				log.info("Sleeping 6 Minutes ...");
+				Thread.sleep((1000 * 60 * 6));
+			} catch (InterruptedException e) {
+				dbPersistor.closeDB();
+				log.error(e);
+				e.printStackTrace();
+			}
+		}
+	}
+
+	/**
+	 * 
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		if (args == null || args.length != 1) {
+			log.error("No Config Parameter giver -> Exit");
+			System.out.println("Please give me a config File as Parameter1");
+			System.exit(1);
+		}
+		// -------------------------------------------------------- Main Loop
+		while (true) {
+			App app = null;
+			try {
+				app = new App();
+				Properties config = new Properties();
+				config.load(new FileInputStream(new File(args[0])));
+				app.twitterBuddy = new TwitterBuddy(config);
+				app.run(config);
+			} catch (Exception e) {
+				log.error(e);
+				try {
+					app.twitterBuddy.sendMessage("ERROR:" + e.getMessage());
+				} catch (TwitterException e2) {
+					e2.printStackTrace();
+					log.error(e2);
+				}
+				try {
+					log.info("Try to Restart in 30 Minutes");
+					Thread.sleep((30 * 60 * 1000));
+				} catch (InterruptedException e1) {
+					log.info("Application Shut Down");
+					e1.printStackTrace();
+					System.exit(1);
+				}
+			}
+		}
+		// --------------------------------------------------------------------
+	}
+
+	public void destroy() {
+		System.exit(0);
+		
+	}
+
+	public void init(DaemonContext daemonContext) throws Exception {
+		if (daemonContext == null || daemonContext.getArguments().length ==0) {
+			
+			throw new Exception("No config File given by jsvc deamonContext");
+		}
+		startPara = daemonContext.getArguments();
+		
+	}
+
+	public void start() throws Exception {
+		main(startPara);
+		
+	}
+
+	public void stop() throws Exception {
+		System.exit(0);
+		
+	}
+
+}
