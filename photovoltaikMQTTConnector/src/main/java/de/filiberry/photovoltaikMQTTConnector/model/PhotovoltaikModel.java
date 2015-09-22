@@ -1,11 +1,18 @@
 package de.filiberry.photovoltaikMQTTConnector.model;
 
 import java.util.Date;
+
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
 public class PhotovoltaikModel {
+
+	public static final String pvMQTTConnStatus_SUNRISE = "SUNRISE";
+	public static final String pvMQTTConnStatus_SUNSET = "SUNSET";
+	public static final String pvMQTTConnStatus_PV_DISCONNECTED = "DISCONNECTED";
+
 	private Date timeStamp;
+	private String pvMQTTConnStatus;
 	private int wr;
 	private int pac;
 	private int daySum;
@@ -112,6 +119,14 @@ public class PhotovoltaikModel {
 
 	public void setUac(int uac) {
 		this.uac = uac;
+	}
+
+	public String getPvMQTTConnStatus() {
+		return pvMQTTConnStatus;
+	}
+
+	public void setPvMQTTConnStatus(String pvMQTTConnStatus) {
+		this.pvMQTTConnStatus = pvMQTTConnStatus;
 	}
 
 }

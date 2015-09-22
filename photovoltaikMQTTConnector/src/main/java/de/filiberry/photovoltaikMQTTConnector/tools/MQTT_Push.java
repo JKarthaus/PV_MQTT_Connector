@@ -42,11 +42,32 @@ public class MQTT_Push {
 
 	/**
 	 * 
+	 */
+	public void PushSunsetData() {
+		ArrayList<PhotovoltaikModel> pmAL = new ArrayList<PhotovoltaikModel>();
+		PhotovoltaikModel pm = new PhotovoltaikModel();
+		pm.setPvMQTTConnStatus(PhotovoltaikModel.pvMQTTConnStatus_SUNSET);
+		pmAL.add(pm);
+		PushNewData(pmAL);
+	}
+	
+	/**
+	 * 
+	 */
+	public void PushNoData() {
+		ArrayList<PhotovoltaikModel> pmAL = new ArrayList<PhotovoltaikModel>();
+		PhotovoltaikModel pm = new PhotovoltaikModel();
+		pm.setPvMQTTConnStatus(PhotovoltaikModel.pvMQTTConnStatus_PV_DISCONNECTED);
+		pmAL.add(pm);
+		PushNewData(pmAL);
+	}
+
+	/**
+	 * 
 	 * @param pmAL
 	 */
 	public void PushNewData(ArrayList<PhotovoltaikModel> pmAL) {
 		try {
-
 			MqttClient sampleClient = new MqttClient(config.getProperty("MQTT_BROKER"), "pvMQTTConnector", persistence);
 			MqttConnectOptions connOpts = new MqttConnectOptions();
 			connOpts.setCleanSession(true);
@@ -59,7 +80,7 @@ public class MQTT_Push {
 				message = new MqttMessage(stringWriter.toString().getBytes());
 				message.setQos(qos);
 				sampleClient.publish(baseTopic, message);
-				log.info("Message : " + i +" von : " + pmAL.size() + "->" + stringWriter.toString() + " published");
+				log.info("Message : " + i + " von : " + pmAL.size() + "->" + stringWriter.toString() + " published");
 			}
 			// --
 			sampleClient.disconnect();

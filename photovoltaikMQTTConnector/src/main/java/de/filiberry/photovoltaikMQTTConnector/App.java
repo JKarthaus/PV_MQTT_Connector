@@ -25,7 +25,7 @@ import de.filiberry.photovoltaikMQTTConnector.tools.SolarLoggerParser;
 import de.filiberry.photovoltaikMQTTConnector.tools.SunriseBuddy;
 import de.filiberry.photovoltaikMQTTConnector.tools.TwitterBuddy;
 
-public class App implements Daemon{
+public class App implements Daemon {
 
 	public static Logger log = Logger.getLogger(App.class);
 	private TwitterBuddy twitterBuddy;
@@ -38,29 +38,52 @@ public class App implements Daemon{
 	 * @throws ParseException
 	 */
 	private void run(Properties config) throws IOException, ParseException, JAXBException {
+		log.info("Application : " + this.getClass().getName() + " startet ...");
+		// Init Phase
 		SunriseBuddy sunriseBuddy = new SunriseBuddy(config);
-
 		SolarLoggerParser solarLoggerParser = new SolarLoggerParser();
 		DBPersistor dbPersistor = new DBPersistor();
 		MQTT_Push mqtt_Push = new MQTT_Push(config);
 		Date lastRun = LastRunParser.getLastRun();
+		int interval = new Integer(config.getProperty("RUN_INTERVAL"));
+		int intervalCount = 0;
+		// Main Loop
+		log.info("Going to Main Loop run every " + interval + " Seconds...");
 		while (true) {
 			// --
-			if (sunriseBuddy.isSunrise()) {
-				InputStream input = new URL(config.getProperty("PHOTOVOLTAIK_DATA_PROVIDER")).openStream();
-				ArrayList<PhotovoltaikModel> pmAL = solarLoggerParser.parseSolarDataSince(input, lastRun);
-				if (pmAL.size() > 0) {
+			ArrayList<PhotovoltaikModel> pmAL = null;
+			if (intervalCount >= interval) {
+				log.debug("Application -> RUN");
+				if (sunriseBuddy.isSunrise()) {
+					InputStream input = new URL(config.getProperty("PHOTOVOLTAIK_DATA_PROVIDER")).openStream();
+					pmAL = solarLoggerParser.parseSolarDataSince(input, lastRun);
+					LastRunParser.setLastRun(new Date());
+				} else {
+					// Push that we are in Sunset
+					mqtt_Push.PushSunsetData();
+					log.debug("We are in Sunset - NO new Data Sunset Info Push to MQTT Connector");
+				}
+
+				// There is some Data to Push
+				if (pmAL != null && pmAL.size() > 0) {
 					mqtt_Push.PushNewData(pmAL);
 					dbPersistor.PersistNewData(pmAL);
-				} else {
-					log.info("Nothing to Store or Push");
+					log.info("Send " + pmAL.size() + " new Solar Data to MQTT Connector");
 				}
-				LastRunParser.setLastRun(new Date());
+				// Disconnected no Sun Power
+				if (pmAL != null && pmAL.size() == 0) {
+					mqtt_Push.PushNoData();
+					log.debug("NO Data from PV Server maybe Cloudy ?");
+				}
+				// --
+				intervalCount = 0;
+				log.info("Next run in " + interval + " Seconds...");
 			}
 			// --
+			intervalCount++;
+			// --
 			try {
-				log.info("Sleeping 6 Minutes ...");
-				Thread.sleep((1000 * 60 * 6));
+				Thread.sleep(1000);
 			} catch (InterruptedException e) {
 				dbPersistor.closeDB();
 				log.error(e);
@@ -111,26 +134,26 @@ public class App implements Daemon{
 
 	public void destroy() {
 		System.exit(0);
-		
+
 	}
 
 	public void init(DaemonContext daemonContext) throws Exception {
-		if (daemonContext == null || daemonContext.getArguments().length ==0) {
-			
+		if (daemonContext == null || daemonContext.getArguments().length == 0) {
+
 			throw new Exception("No config File given by jsvc deamonContext");
 		}
 		startPara = daemonContext.getArguments();
-		
+
 	}
 
 	public void start() throws Exception {
 		main(startPara);
-		
+
 	}
 
 	public void stop() throws Exception {
 		System.exit(0);
-		
+
 	}
 
 }
