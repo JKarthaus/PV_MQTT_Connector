@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.net.URLConnection;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -55,8 +56,11 @@ public class App implements Daemon {
 			if (intervalCount >= interval) {
 				log.debug("Application -> RUN");
 				if (sunriseBuddy.isSunrise()) {
-					InputStream input = new URL(config.getProperty("PHOTOVOLTAIK_DATA_PROVIDER")).openStream();
-					pmAL = solarLoggerParser.parseSolarDataSince(input, lastRun);
+					URL url = new URL(config.getProperty("PHOTOVOLTAIK_DATA_PROVIDER"));
+					URLConnection connection = url.openConnection();
+					log.info("Open connection to : " + connection.getURL().toString());
+					connection.setReadTimeout(60000);
+					pmAL = solarLoggerParser.parseSolarDataSince(connection.getInputStream(), lastRun);
 					LastRunParser.setLastRun(new Date());
 				} else {
 					// Push that we are in Sunset
@@ -134,26 +138,30 @@ public class App implements Daemon {
 
 	public void destroy() {
 		System.exit(0);
-
 	}
 
+	/**
+	 * JSVC init Implementation
+	 */
 	public void init(DaemonContext daemonContext) throws Exception {
 		if (daemonContext == null || daemonContext.getArguments().length == 0) {
-
 			throw new Exception("No config File given by jsvc deamonContext");
 		}
 		startPara = daemonContext.getArguments();
-
 	}
 
+	/**
+	 * JSVC Start implementation
+	 */
 	public void start() throws Exception {
 		main(startPara);
-
 	}
 
+	/**
+	 * JSVC stop Implementation
+	 */
 	public void stop() throws Exception {
 		System.exit(0);
-
 	}
 
 }

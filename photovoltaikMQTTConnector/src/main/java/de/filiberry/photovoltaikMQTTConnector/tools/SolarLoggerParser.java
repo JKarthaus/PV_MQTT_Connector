@@ -104,6 +104,7 @@ public class SolarLoggerParser {
 			result.setUdc2(new Integer(parts[10]));
 			result.setTemp(new Integer(parts[11]));
 			result.setUac(new Integer(parts[12]));
+			result.setPvMQTTConnStatus(PhotovoltaikModel.pvMQTTConnStatus_SUNRISE);
 		}
 		return result;
 	}
