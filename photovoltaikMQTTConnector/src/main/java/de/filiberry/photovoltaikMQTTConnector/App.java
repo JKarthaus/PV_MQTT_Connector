@@ -59,7 +59,7 @@ public class App implements Daemon {
 					URL url = new URL(config.getProperty("PHOTOVOLTAIK_DATA_PROVIDER"));
 					URLConnection connection = url.openConnection();
 					log.info("Open connection to : " + connection.getURL().toString());
-					connection.setReadTimeout(60000);
+					connection.setReadTimeout((120 * 1000));
 					pmAL = solarLoggerParser.parseSolarDataSince(connection.getInputStream(), lastRun);
 					LastRunParser.setLastRun(new Date());
 				} else {
