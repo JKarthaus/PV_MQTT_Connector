@@ -4,8 +4,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -22,10 +20,12 @@ import de.filiberry.photovoltaikMQTTConnector.model.PhotovoltaikModel;
 import de.filiberry.photovoltaikMQTTConnector.tools.DBPersistor;
 import de.filiberry.photovoltaikMQTTConnector.tools.LastRunParser;
 import de.filiberry.photovoltaikMQTTConnector.tools.MQTT_Push;
+import de.filiberry.photovoltaikMQTTConnector.tools.ReadDataBuddy;
 import de.filiberry.photovoltaikMQTTConnector.tools.SolarLoggerParser;
 import de.filiberry.photovoltaikMQTTConnector.tools.SunriseBuddy;
 import de.filiberry.photovoltaikMQTTConnector.tools.TwitterBuddy;
 
+@SuppressWarnings("restriction")
 public class App implements Daemon {
 
 	public static Logger log = Logger.getLogger(App.class);
@@ -37,11 +37,13 @@ public class App implements Daemon {
 	 * @param config
 	 * @throws IOException
 	 * @throws ParseException
+	 * @throws JAXBException
 	 */
 	private void run(Properties config) throws IOException, ParseException, JAXBException {
 		log.info("Application : " + this.getClass().getName() + " startet ...");
 		// Init Phase
 		SunriseBuddy sunriseBuddy = new SunriseBuddy(config);
+		ReadDataBuddy readDataBuddy = new ReadDataBuddy();
 		SolarLoggerParser solarLoggerParser = new SolarLoggerParser();
 		DBPersistor dbPersistor = new DBPersistor();
 		MQTT_Push mqtt_Push = new MQTT_Push(config);
@@ -56,11 +58,8 @@ public class App implements Daemon {
 			if (intervalCount >= interval) {
 				log.debug("Application -> RUN");
 				if (sunriseBuddy.isSunrise()) {
-					URL url = new URL(config.getProperty("PHOTOVOLTAIK_DATA_PROVIDER"));
-					URLConnection connection = url.openConnection();
-					log.info("Open connection to : " + connection.getURL().toString());
-					connection.setReadTimeout((120 * 1000));
-					pmAL = solarLoggerParser.parseSolarDataSince(connection.getInputStream(), lastRun);
+					InputStream dataInputStream = readDataBuddy.getDataFromServer(config.getProperty("PHOTOVOLTAIK_DATA_PROVIDER"));
+					pmAL = solarLoggerParser.parseSolarDataSince(dataInputStream, lastRun);
 					LastRunParser.setLastRun(new Date());
 				} else {
 					// Push that we are in Sunset
