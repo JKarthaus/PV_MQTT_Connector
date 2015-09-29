@@ -47,7 +47,6 @@ public class App implements Daemon {
 		SolarLoggerParser solarLoggerParser = new SolarLoggerParser();
 		DBPersistor dbPersistor = new DBPersistor();
 		MQTT_Push mqtt_Push = new MQTT_Push(config);
-		Date lastRun = LastRunParser.getLastRun();
 		int interval = new Integer(config.getProperty("RUN_INTERVAL"));
 		int intervalCount = 0;
 		// Main Loop
@@ -58,6 +57,7 @@ public class App implements Daemon {
 			if (intervalCount >= interval) {
 				log.debug("Application -> RUN");
 				if (sunriseBuddy.isSunrise()) {
+					Date lastRun = LastRunParser.getLastRun();
 					InputStream dataInputStream = readDataBuddy.getDataFromServer(config.getProperty("PHOTOVOLTAIK_DATA_PROVIDER"));
 					pmAL = solarLoggerParser.parseSolarDataSince(dataInputStream, lastRun);
 					LastRunParser.setLastRun(new Date());
