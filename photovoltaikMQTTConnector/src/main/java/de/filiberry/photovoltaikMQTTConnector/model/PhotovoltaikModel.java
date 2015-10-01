@@ -13,6 +13,7 @@ public class PhotovoltaikModel {
 
 	private Date timeStamp;
 	private String pvMQTTConnStatus;
+	private float wPQM;
 	private int wr;
 	private int pac;
 	private int daySum;
@@ -127,6 +128,14 @@ public class PhotovoltaikModel {
 
 	public void setPvMQTTConnStatus(String pvMQTTConnStatus) {
 		this.pvMQTTConnStatus = pvMQTTConnStatus;
+	}
+
+	public float getwPQM() {
+		return wPQM;
+	}
+
+	public void setwPQM(float wPQM) {
+		this.wPQM = wPQM;
 	}
 
 }

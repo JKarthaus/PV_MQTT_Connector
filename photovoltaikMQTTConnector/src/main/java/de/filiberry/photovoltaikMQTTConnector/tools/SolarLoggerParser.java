@@ -7,6 +7,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Properties;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -28,6 +29,15 @@ public class SolarLoggerParser {
 	static Logger log = Logger.getLogger(SolarLoggerParser.class);
 	static Float SOLAR_AREA = new Float(12);
 	private SimpleDateFormat formatter = new SimpleDateFormat("dd.MM.yy HH:mm:ss");
+	private Properties config;
+
+	/**
+	 * 
+	 * @param config
+	 */
+	public SolarLoggerParser(Properties config) {
+		this.config = config;
+	}
 
 	/**
 	 * 
@@ -95,6 +105,11 @@ public class SolarLoggerParser {
 			}
 			result.setWr(new Integer(parts[2]));
 			result.setPac(new Integer(parts[3]));
+			if (result.getPac() > 0) {
+				result.setwPQM(result.getPac() / new Integer(config.getProperty("PHOTOVOLTAIK_QM_SIZE")));
+			} else {
+				result.setwPQM(0);
+			}
 			result.setDaySum(new Integer(parts[4]));
 			result.setStatus(new Integer(parts[5]));
 			result.setError(new Integer(parts[6]));

@@ -44,7 +44,7 @@ public class App implements Daemon {
 		// Init Phase
 		SunriseBuddy sunriseBuddy = new SunriseBuddy(config);
 		ReadDataBuddy readDataBuddy = new ReadDataBuddy();
-		SolarLoggerParser solarLoggerParser = new SolarLoggerParser();
+		SolarLoggerParser solarLoggerParser = new SolarLoggerParser(config);
 		DBPersistor dbPersistor = new DBPersistor();
 		MQTT_Push mqtt_Push = new MQTT_Push(config);
 		int interval = new Integer(config.getProperty("RUN_INTERVAL"));
